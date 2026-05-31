@@ -57,7 +57,7 @@
         
         .dot { width: 100%; aspect-ratio: 1; background-color: #374151; border-radius: 1px; }
         
-        /* Log Alanı */
+        
         .log-box { height: 160px; overflow-y: auto; font-family: monospace; color: #a7f3d0; font-size: 12px; display: flex; flex-direction: column; gap: 4px; background: #030712; padding: 10px; border-radius: 8px; border: 1px solid #374151; }
         .log-entry { padding: 4px; border-left: 3px solid; background: rgba(0,0,0,0.2); }
     </style>
@@ -135,14 +135,14 @@
     </div>
 
     <script>
-        // KENDİ YENİ AWS LİNKİNİ BURAYA YAPIŞTIR!
+        
         const API_URL = "https://96t2y7mdv4.execute-api.us-east-1.amazonaws.com/default/DersSecimSistemi";
 
         let gonderilen = 0, islenen = 0, hatali = 0;
 
         function matrisOlustur(sayi) {
             const grid = document.getElementById('pixelGrid');
-            grid.innerHTML = ''; // Eski noktaları temizle
+            grid.innerHTML = ''; 
             for (let i = 1; i <= sayi; i++) {
                 const dot = document.createElement('div');
                 dot.className = 'dot';
@@ -252,7 +252,7 @@
                         .then(data => {
                             islenen++; sayacGuncelle();
                             if(dot) dot.style.backgroundColor = '#10b981'; 
-                            // Çok fazla log tarayıcıyı yormasın diye logları seyreltiyoruz
+                            // log kayıtları tarayıcıyı yormasın diye logları filtreleme
                             if (i % 10 === 0 || i === hedef) logYaz(`Lambda OK: Öğrenci ${sahteNo} işlendi.`, "basari");
                         })
                         .catch(err => {
