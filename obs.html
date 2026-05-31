@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OBS Serverless Dinamik Yük Testi</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; margin: 0; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h1 { color: #1f2937; margin: 0 0 5px 0; font-size: 28px; }
+        .header p { color: #6b7280; font-size: 14px; margin: 0; }
+        
+        .dashboard { display: flex; gap: 20px; width: 100%; max-width: 1300px; align-items: flex-start; }
+        
+        /* Sol Panel - Kontroller */
+        .control-panel { flex: 0 0 350px; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 6px; font-weight: bold; color: #374151; font-size: 14px; }
+        .form-group select, .form-group input { width: 100%; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
+        .form-group input:focus { outline: none; border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+        
+        .btn-normal { width: 100%; padding: 12px; background-color: #3b82f6; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer; transition: 0.2s; display: flex; justify-content: center; align-items: center; gap: 8px; }
+        .btn-normal:hover { background-color: #2563eb; }
+        
+        .ping-result { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; padding: 10px; text-align: center; margin-top: 10px; display: none; }
+        .ping-result .ping-time { font-size: 20px; font-weight: bold; color: #16a34a; font-family: monospace; }
+        
+        .divider { border-top: 2px dashed #e5e7eb; margin: 25px 0; position: relative; }
+        .divider span { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: white; padding: 0 10px; color: #9ca3af; font-weight: bold; font-size: 12px; white-space: nowrap;}
+        
+        .btn-legacy { width: 100%; padding: 15px; background-color: #374151; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 15px; }
+        .btn-legacy:hover { background-color: #1f2937; }
+        .btn-legacy span { font-size: 11px; color: #9ca3af; font-weight: normal; margin-top: 4px; }
+
+        .btn-stress { width: 100%; padding: 15px; background-color: #ef4444; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 14px 0 rgba(239, 68, 68, 0.39); transition: 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; text-transform: uppercase; }
+        .btn-stress:hover { transform: scale(1.02); background-color: #dc2626; }
+        .btn-stress span { font-size: 11px; color: #fca5a5; font-weight: normal; margin-top: 4px; text-transform: none; }
+        
+        /* Sağ Panel - Büyük Monitör */
+        .monitor-panel { flex: 1; background: #111827; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 15px; }
+        
+        .stats { display: flex; gap: 15px; }
+        .stat-card { flex: 1; background: #1f2937; padding: 12px; border-radius: 8px; text-align: center; border: 1px solid #374151; }
+        .stat-card .value { color: white; font-size: 28px; font-weight: bold; }
+        .stat-card .label { color: #9ca3af; font-size: 11px; text-transform: uppercase; margin-top: 5px; }
+        
+        /* DİNAMİK MATRİS */
+        .matrix-container { background: #030712; padding: 15px; border-radius: 8px; border: 1px solid #374151; }
+        .matrix-title { color: #9ca3af; font-size: 12px; font-weight: bold; text-transform: uppercase; margin-bottom: 10px; font-family: monospace; display: flex; justify-content: space-between; }
+        /* auto-fill ve minmax sayesinde sayı ne olursa olsun ekrana düzgün yayılır */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(12px, 1fr)); gap: 3px; max-height: 250px; overflow-y: auto; padding-right: 5px; }
+        /* Scrollbar tasarımı */
+        .grid::-webkit-scrollbar { width: 6px; }
+        .grid::-webkit-scrollbar-track { background: #1f2937; border-radius: 4px; }
+        .grid::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        
+        .dot { width: 100%; aspect-ratio: 1; background-color: #374151; border-radius: 1px; }
+        
+        /* Log Alanı */
+        .log-box { height: 160px; overflow-y: auto; font-family: monospace; color: #a7f3d0; font-size: 12px; display: flex; flex-direction: column; gap: 4px; background: #030712; padding: 10px; border-radius: 8px; border: 1px solid #374151; }
+        .log-entry { padding: 4px; border-left: 3px solid; background: rgba(0,0,0,0.2); }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>🎓 Üniversite OBS Mimari Karşılaştırması</h1>
+        <p>Geleneksel Sunucu Kısıtlamaları vs. AWS Serverless Auto-Scaling (Dinamik Yük)</p>
+    </div>
+
+    <div class="dashboard">
+        <div class="control-panel">
+            <h2 style="margin-top:0; font-size:14px; color:#4f46e5; border-bottom:2px solid #e5e7eb; padding-bottom:8px; text-transform: uppercase;">
+                <i class="fa-solid fa-stopwatch"></i> Aşama 1: Ağ Gecikmesi
+            </h2>
+            
+            <button class="btn-normal" onclick="tekliKayit()">
+                <i class="fa-solid fa-satellite-dish"></i> Bağlantı Hızını Ölç
+            </button>
+            <div id="pingResult" class="ping-result">
+                <div class="ping-time" id="pingTime">-- ms</div>
+            </div>
+
+            <div class="divider"><span>AŞAMA 2: ÇÖKME TESTİ</span></div>
+            
+            <div class="form-group" style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
+                <label style="color: #0f172a;"><i class="fa-solid fa-users"></i> Anlık Öğrenci Yığılması (Kişi)</label>
+                <p style="font-size: 11px; color: #64748b; margin-top: 0; margin-bottom: 8px;">Simüle edilecek trafiği belirleyin </p>
+                <input type="number" id="hedefYük" value="1250" min="10" max="10000">
+            </div>
+
+            <button class="btn-legacy" onclick="gelenekselTestBaslat()">
+                <i class="fa-solid fa-server"></i> Geleneksel Sunucu
+                <span>(Sabit Kapasite - Simülasyon)</span>
+            </button>
+
+            <button class="btn-stress" onclick="awsTestBaslat()">
+                <i class="fa-solid fa-cloud-bolt"></i> AWS Serverless
+                <span>(Sonsuz Ölçeklenme - Gerçek API)</span>
+            </button>
+        </div>
+
+        <div class="monitor-panel">
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="value" id="toplamIstek">0</div>
+                    <div class="label">Gönderilen İstek</div>
+                </div>
+                <div class="stat-card" id="basariliKart">
+                    <div class="value" id="basariliKayit" style="color: #10b981;">0</div>
+                    <div class="label">İşlenen Kayıt</div>
+                </div>
+                <div class="stat-card" id="hataKart">
+                    <div class="value" id="hataliKayit" style="color: #ef4444;">0</div>
+                    <div class="label">Düşen/Hatalı Kayıt</div>
+                </div>
+            </div>
+            
+            <div class="matrix-container">
+                <div class="matrix-title">
+                    <span><i class="fa-solid fa-thumbtack"></i> Canlı Hücum Matrisi</span>
+                </div>
+                <div class="grid" id="pixelGrid">
+                    <div style="color: #4b5563; font-size: 12px; grid-column: 1 / -1; text-align: center; padding: 20px;">
+                        Trafik hedefi belirlendiğinde matris otomatik oluşturulacaktır.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="log-box" id="logBox">
+                <div style="color: #6b7280; text-align: center; margin-top: 50px;">Sistem hazır. Test başlatılması bekleniyor...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // KENDİ YENİ AWS LİNKİNİ BURAYA YAPIŞTIR!
+        const API_URL = "https://96t2y7mdv4.execute-api.us-east-1.amazonaws.com/default/DersSecimSistemi";
+
+        let gonderilen = 0, islenen = 0, hatali = 0;
+
+        function matrisOlustur(sayi) {
+            const grid = document.getElementById('pixelGrid');
+            grid.innerHTML = ''; // Eski noktaları temizle
+            for (let i = 1; i <= sayi; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'dot';
+                dot.id = `dot-${i}`;
+                grid.appendChild(dot);
+            }
+        }
+
+        function ekranSifirla(hedefSayi) {
+            gonderilen = 0; islenen = 0; hatali = 0; sayacGuncelle();
+            matrisOlustur(hedefSayi);
+            document.getElementById('logBox').innerHTML = "";
+        }
+
+        function sayacGuncelle() {
+            document.getElementById('toplamIstek').innerText = gonderilen;
+            document.getElementById('basariliKayit').innerText = islenen;
+            document.getElementById('hataliKayit').innerText = hatali;
+        }
+
+        function logYaz(mesaj, tip) {
+            const logBox = document.getElementById('logBox');
+            const saat = new Date().toISOString().split('T')[1].slice(0,-1);
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            
+            if(tip === 'basari') {
+                entry.style.borderLeftColor = '#10b981';
+                entry.style.color = '#a7f3d0';
+            } else if (tip === 'hata') {
+                entry.style.borderLeftColor = '#ef4444';
+                entry.style.color = '#fca5a5';
+                entry.style.background = 'rgba(239, 68, 68, 0.1)';
+            } else {
+                entry.style.borderLeftColor = '#f59e0b';
+                entry.style.color = '#fde68a';
+            }
+            
+            entry.innerHTML = `[${saat}] ${mesaj}`;
+            logBox.prepend(entry);
+            if(logBox.children.length > 40) logBox.removeChild(logBox.lastChild);
+        }
+
+        // PİNG TESTİ
+        function tekliKayit() {
+            ekranSifirla(1);
+            const baslangic = performance.now();
+            fetch(`${API_URL}?ogrenci_no=2026999&ders_adi=PingTesti`)
+                .then(res => res.json())
+                .then(() => {
+                    const sure = Math.round(performance.now() - baslangic);
+                    document.getElementById('pingResult').style.display = 'block';
+                    document.getElementById('pingTime').innerText = sure + " ms";
+                    document.getElementById('dot-1').style.backgroundColor = '#10b981';
+                    logYaz(`AWS Ping Başarılı: ${sure}ms`, 'basari');
+                });
+        }
+
+        // GELENEKSEL SUNUCU (SİMÜLASYON)
+        function gelenekselTestBaslat() {
+            const hedef = parseInt(document.getElementById('hedefYük').value) || 1000;
+            ekranSifirla(hedef);
+            logYaz(`SİSTEM: Geleneksel Sunucu Başlatıldı. Beklenen Yük: ${hedef}`, "uyari");
+            
+            let cokmeAnı = 200; 
+            let sunucuCoktu = false;
+
+            for (let i = 1; i <= hedef; i++) {
+                setTimeout(() => {
+                    gonderilen++;
+                    const dot = document.getElementById(`dot-${i}`);
+                    if(dot) dot.style.backgroundColor = '#f59e0b'; 
+                    
+                    setTimeout(() => {
+                        if (i > cokmeAnı) {
+                            if(!sunucuCoktu) {
+                                sunucuCoktu = true;
+                                logYaz("CRITICAL ERROR: 503 Service Unavailable (Sunucu Çöktü!)", "hata");
+                            }
+                            hatali++; sayacGuncelle();
+                            if(dot) dot.style.backgroundColor = '#ef4444'; 
+                        } else {
+                            islenen++; sayacGuncelle();
+                            if(dot) dot.style.backgroundColor = '#10b981'; 
+                        }
+                    }, 50); 
+                }, i * 5); 
+            }
+        }
+
+        // AWS SERVERLESS (GERÇEK VERİ)
+        function awsTestBaslat() {
+            const hedef = parseInt(document.getElementById('hedefYük').value) || 1000;
+            ekranSifirla(hedef);
+            logYaz(`SİSTEM: AWS Lambda Auto-Scaling Devrede. Dinamik Yük: ${hedef}`, "basari");
+
+            for (let i = 1; i <= hedef; i++) {
+                let sahteNo = "2026" + Math.floor(1000 + Math.random() * 9000);
+                
+                setTimeout(() => {
+                    gonderilen++; sayacGuncelle();
+                    const dot = document.getElementById(`dot-${i}`);
+                    if(dot) dot.style.backgroundColor = '#f59e0b'; 
+                    
+                    fetch(`${API_URL}?ogrenci_no=${sahteNo}&ders_adi=Biyomedikal`)
+                        .then(res => res.json())
+                        .then(data => {
+                            islenen++; sayacGuncelle();
+                            if(dot) dot.style.backgroundColor = '#10b981'; 
+                            // Çok fazla log tarayıcıyı yormasın diye logları seyreltiyoruz
+                            if (i % 10 === 0 || i === hedef) logYaz(`Lambda OK: Öğrenci ${sahteNo} işlendi.`, "basari");
+                        })
+                        .catch(err => {
+                            hatali++; sayacGuncelle();
+                            if(dot) dot.style.backgroundColor = '#ef4444';
+                        });
+                }, i * 5); 
+            }
+        }
+    </script>
+</body>
+</html>
