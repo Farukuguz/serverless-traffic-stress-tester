@@ -247,7 +247,7 @@
                     const dot = document.getElementById(`dot-${i}`);
                     if(dot) dot.style.backgroundColor = '#f59e0b'; 
                     
-                    fetch(`${API_URL}?ogrenci_no=${sahteNo}&ders_adi=Biyomedikal`)
+                    fetch(`${API_URL}?ogrenci_no=${sahteNo}&ders_adi=Bulut Bilişim`)
                         .then(res => res.json())
                         .then(data => {
                             islenen++; sayacGuncelle();
